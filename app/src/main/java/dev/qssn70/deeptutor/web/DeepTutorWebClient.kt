@@ -14,8 +14,16 @@ class DeepTutorWebClient(
     private val context: Context,
     private val policy: NavigationPolicy,
     private val onMainFrameError: (String) -> Unit,
-    private val onRendererGone: () -> Unit
+    private val onRendererGone: () -> Unit,
+    private val onPageStarted: () -> Unit = {},
+    private val onPageFinished: () -> Unit = {}
 ) : WebViewClient() {
+    override fun onPageStarted(view: WebView, url: String?, favicon: android.graphics.Bitmap?) {
+        onPageStarted()
+    }
+    override fun onPageFinished(view: WebView, url: String?) {
+        onPageFinished()
+    }
     override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
         if (policy.inApp(request.url)) return false
         val uri = request.url
