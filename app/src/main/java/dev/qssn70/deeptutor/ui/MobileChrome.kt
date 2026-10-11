@@ -37,8 +37,8 @@ class MobileChrome(
     private var browser: WebView? = null
     private val isNight = context.resources.configuration.uiMode and
         Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
-    private val foreground = if (isNight) Color.WHITE else Color.rgb(32, 35, 42)
-    private val background = if (isNight) Color.rgb(28, 30, 36) else Color.WHITE
+    private val foregroundColor = if (isNight) Color.WHITE else Color.rgb(32, 35, 42)
+    private val surfaceColor = if (isNight) Color.rgb(28, 30, 36) else Color.WHITE
 
     private val progress = ProgressBar(context, null, android.R.attr.progressBarStyleHorizontal).apply {
         max = 100
@@ -49,7 +49,7 @@ class MobileChrome(
 
     private val errorDescription = TextView(context).apply {
         textSize = 14f
-        setTextColor(foreground)
+        setTextColor(foregroundColor)
         gravity = Gravity.CENTER
     }
 
@@ -57,7 +57,7 @@ class MobileChrome(
         orientation = LinearLayout.VERTICAL
         gravity = Gravity.CENTER
         setPadding(dp(24), dp(24), dp(24), dp(24))
-        setBackgroundColor(background)
+        setBackgroundColor(surfaceColor)
         isClickable = true
         visibility = View.GONE
 
@@ -65,7 +65,7 @@ class MobileChrome(
             text = "连接 DeepTutor 失败"
             textSize = 20f
             setTypeface(null, Typeface.BOLD)
-            setTextColor(foreground)
+            setTextColor(foregroundColor)
             gravity = Gravity.CENTER
         }, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
 
@@ -89,7 +89,7 @@ class MobileChrome(
     private val menuButton = TextView(context).apply {
         text = "⋮"
         textSize = 25f
-        setTextColor(foreground)
+        setTextColor(foregroundColor)
         gravity = Gravity.CENTER
         contentDescription = "客户端操作菜单；长按可切换左右位置"
         isFocusable = true
@@ -111,7 +111,7 @@ class MobileChrome(
     }
 
     init {
-        setBackgroundColor(background)
+        setBackgroundColor(surfaceColor)
     }
 
     fun attach(view: WebView) {
