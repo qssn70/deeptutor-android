@@ -15,7 +15,7 @@ object MobilePageTweaks {
         (function () {
           if (!document.head) return;
           const id = 'deeptutor-android-reading-fixes-v1';
-          if (document.getElementById(id)) return;
+          document.getElementById(id)?.remove();
           const style = document.createElement('style');
           style.id = id;
           style.textContent = [
@@ -45,14 +45,50 @@ object MobilePageTweaks {
             '    -webkit-overflow-scrolling: touch;',
             '  }',
             '}'
-          ].join('\\n');
+          ].join(' ');
           document.head.appendChild(style);
+          // DeepTutor renders the resource dialog via a portal and computes
+          // its top/height inline. CSS alone can be overridden by subsequent
+          // React renders; watch for the dialog and re-clamp it.
+          if (!window.__deeptutorAndroidResourceFix) {
+            let scheduled = false;
+            const fix = () => {
+              scheduled = false;
+              const dialog = document.querySelector('[role="dialog"][aria-label="资源"],[role="dialog"][aria-label="Resources"]');
+              if (!dialog || window.innerWidth >= 768) return;
+              const viewport = window.visualViewport;
+              const height = viewport?.height || window.innerHeight;
+              const top = (viewport?.offsetTop || 0) + 12;
+              const maxHeight = Math.max(180, height - 24);
+              if (dialog.style.getPropertyValue('top') !== top + 'px')
+                dialog.style.setProperty('top', top + 'px', 'important');
+              if (dialog.style.getPropertyValue('max-height') !== maxHeight + 'px')
+                dialog.style.setProperty('max-height', maxHeight + 'px', 'important');
+              if (dialog.style.getPropertyValue('bottom') !== 'auto')
+                dialog.style.setProperty('bottom', 'auto', 'important');
+              const body = dialog.lastElementChild;
+              if (body && body.style.overflowY !== 'auto') body.style.overflowY = 'auto';
+            };
+            const schedule = () => {
+              if (scheduled) return;
+              scheduled = true;
+              requestAnimationFrame(fix);
+            };
+            const observer = new MutationObserver(schedule);
+            observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['style'] });
+            window.visualViewport?.addEventListener('resize', schedule);
+            window.addEventListener('resize', schedule);
+            window.__deeptutorAndroidResourceFix = { observer, schedule };
+          }
+          window.__deeptutorAndroidResourceFix.schedule();
         })();
     """.trimIndent()
 
     private val removeScript = """
         (function () {
           document.getElementById('deeptutor-android-reading-fixes-v1')?.remove();
+          window.__deeptutorAndroidResourceFix?.observer.disconnect();
+          delete window.__deeptutorAndroidResourceFix;
         })();
     """.trimIndent()
 
