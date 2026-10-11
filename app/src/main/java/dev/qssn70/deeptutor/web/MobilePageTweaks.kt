@@ -13,7 +13,7 @@ import android.webkit.WebView
 object MobilePageTweaks {
     private val installScript = """
         (function () {
-          if (!document.head) return;
+          if (!document.head || !document.body) return;
           const id = 'deeptutor-android-reading-fixes-v1';
           document.getElementById(id)?.remove();
           const style = document.createElement('style');
@@ -92,6 +92,7 @@ object MobilePageTweaks {
             window.__deeptutorAndroidResourceFix = { observer, schedule };
           }
           window.__deeptutorAndroidResourceFix.schedule();
+          return 'mobile-resource-fix-installed';
         })();
     """.trimIndent()
 
