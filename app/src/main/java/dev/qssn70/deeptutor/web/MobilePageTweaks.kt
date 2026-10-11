@@ -31,9 +31,10 @@ object MobilePageTweaks {
             '  [role="dialog"][aria-label="资源"],',
             '  [role="dialog"][aria-label="Resources"] {',
             '    top: 12px !important;',
+            '    transform: none !important;',
             '    bottom: auto !important;',
             '    max-height: calc(100dvh - 24px) !important;',
-            '    height: auto !important;',
+            '    height: calc(100dvh - 24px) !important;',
             '    display: flex !important;',
             '    flex-direction: column !important;',
             '  }',
@@ -60,6 +61,10 @@ object MobilePageTweaks {
               const height = viewport?.height || window.innerHeight;
               const top = (viewport?.offsetTop || 0) + 12;
               const maxHeight = Math.max(180, height - 24);
+              if (dialog.style.getPropertyValue('height') !== maxHeight + 'px')
+                dialog.style.setProperty('height', maxHeight + 'px', 'important');
+              if (dialog.style.getPropertyValue('transform') !== 'none')
+                dialog.style.setProperty('transform', 'none', 'important');
               if (dialog.style.getPropertyValue('top') !== top + 'px')
                 dialog.style.setProperty('top', top + 'px', 'important');
               if (dialog.style.getPropertyValue('max-height') !== maxHeight + 'px')
@@ -67,7 +72,13 @@ object MobilePageTweaks {
               if (dialog.style.getPropertyValue('bottom') !== 'auto')
                 dialog.style.setProperty('bottom', 'auto', 'important');
               const body = dialog.lastElementChild;
-              if (body && body.style.overflowY !== 'auto') body.style.overflowY = 'auto';
+              if (body) {
+                body.style.setProperty('min-height', '0', 'important');
+                body.style.setProperty('flex', '1 1 auto', 'important');
+                body.style.setProperty('overflow-y', 'auto', 'important');
+                body.style.setProperty('touch-action', 'pan-y', 'important');
+                body.style.setProperty('-webkit-overflow-scrolling', 'touch');
+              }
             };
             const schedule = () => {
               if (scheduled) return;
