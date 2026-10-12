@@ -47,6 +47,48 @@ object MobilePageTweaks {
               return originalFocus.apply(this, args);
             };
           }
+          // Temporary on-device diagnostics: only inspect; do not modify scrolling.
+          if (!window.__deeptutorResourceDiagnostics) {
+            const installDiagnostics = () => {
+              const dialog = document.querySelector('[role="dialog"][aria-label="资源"],[role="dialog"][aria-label="Resources"]');
+              if (!dialog || dialog.querySelector('[data-resource-diagnostics]')) return;
+              const header = dialog.firstElementChild;
+              if (!header) return;
+              const button = document.createElement('button');
+              button.type = 'button';
+              button.textContent = '诊断';
+              button.setAttribute('data-resource-diagnostics', 'true');
+              button.style.cssText = 'flex:none;font-size:12px;padding:5px 8px;border:1px solid #888;border-radius:6px;margin-right:4px;';
+              button.addEventListener('click', () => {
+                const body = dialog.lastElementChild;
+                const outer = dialog.getBoundingClientRect();
+                const inner = body?.getBoundingClientRect();
+                const before = body?.scrollTop ?? 0;
+                if (body) body.scrollTop = before + 100;
+                const after = body?.scrollTop ?? 0;
+                if (body) body.scrollTop = before;
+                const css = body ? getComputedStyle(body) : null;
+                const dcss = getComputedStyle(dialog);
+                const info = [
+                  'Viewport: ' + innerWidth + 'x' + innerHeight,
+                  'Dialog: ' + Math.round(outer.width) + 'x' + Math.round(outer.height),
+                  'Dialog CSS: ' + dcss.display + ', overflow=' + dcss.overflowY,
+                  'Body: ' + (inner ? Math.round(inner.width) + 'x' + Math.round(inner.height) : 'missing'),
+                  'Body client/scroll: ' + (body?.clientHeight ?? '-') + '/' + (body?.scrollHeight ?? '-'),
+                  'Body CSS: overflow=' + css?.overflowY + ', flex=' + css?.flex + ', touch=' + css?.touchAction,
+                  'ScrollTop test: ' + before + ' -> ' + after,
+                  'Children: ' + (body?.children.length ?? 0),
+                  'CSS loaded: ' + !!document.getElementById(id)
+                ].join('\\n');
+                alert(info);
+              });
+              header.insertBefore(button, header.lastElementChild);
+            };
+            const observer = new MutationObserver(() => installDiagnostics());
+            observer.observe(document.body, {childList:true, subtree:true});
+            window.__deeptutorResourceDiagnostics = observer;
+            installDiagnostics();
+          }
           // SPA navigation does not reload WebView. CSS stays installed and
           // automatically matches dialogs created later by React portals.
           return 'resource-sheet-v2-installed';
@@ -59,6 +101,8 @@ object MobilePageTweaks {
           document.getElementById('deeptutor-android-reading-fixes-v1')?.remove();
           window.__deeptutorAndroidResourceFix?.observer?.disconnect();
           delete window.__deeptutorAndroidResourceFix;
+          window.__deeptutorResourceDiagnostics?.disconnect();
+          delete window.__deeptutorResourceDiagnostics;
           if (window.__deeptutorAndroidOriginalFocus) {
             HTMLElement.prototype.focus = window.__deeptutorAndroidOriginalFocus;
             delete window.__deeptutorAndroidOriginalFocus;
