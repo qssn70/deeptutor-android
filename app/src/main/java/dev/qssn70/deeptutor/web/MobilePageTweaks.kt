@@ -53,55 +53,35 @@ object MobilePageTweaks {
               return originalFocus.apply(this, args);
             };
           }
-          // React/Framer Motion may paint descendants outside their measured parent.
-          // Give the actual content wrapper an explicit height so WebView can scroll.
-          if (!window.__deeptutorResourceScrollRepair) {
-            let pending = false;
-            let lastInner = null;
-            let resizeObserver = null;
-            const repair = () => {
-              pending = false;
+          // A transformed composer ancestor makes position:fixed relative to the
+          // composer rather than the viewport. Correct the measured screen offset.
+          // This is why fully measured content appeared below the screen with no
+          // scroll range: the whole dialog was displaced, not its inner contents.
+          if (!window.__deeptutorResourcePositionFix) {
+            let scheduled = false;
+            const place = () => {
+              scheduled = false;
               const dialog = document.querySelector('[role="dialog"][aria-label="资源"],[role="dialog"][aria-label="Resources"]');
               if (!dialog) return;
-              const body = dialog.lastElementChild;
-              const inner = body?.firstElementChild;
-              if (!inner) return;
-              const header = dialog.firstElementChild;
-              const available = Math.max(100, dialog.clientHeight - (header?.offsetHeight || 40));
-              body.style.setProperty('height', available + 'px', 'important');
-              body.style.setProperty('max-height', available + 'px', 'important');
-              body.style.setProperty('flex', '0 0 auto', 'important');
-              body.style.setProperty('overflow-y', 'auto', 'important');
-              // Compute in content coordinates, independent of current scrollTop.
-              const base = inner.getBoundingClientRect().top;
-              let bottom = base;
-              for (const el of inner.querySelectorAll('section, section *, button, input')) {
-                const rect = el.getBoundingClientRect();
-                if (rect.height > 0) bottom = Math.max(bottom, rect.bottom);
-              }
-              const required = Math.ceil(bottom - base + 2);
-              if (required > 0) {
-                inner.style.setProperty('height', required + 'px', 'important');
-                inner.style.setProperty('min-height', required + 'px', 'important');
-              }
-              if (inner !== lastInner) {
-                resizeObserver?.disconnect();
-                lastInner = inner;
-                resizeObserver = new ResizeObserver(schedule);
-                for (const child of inner.children) resizeObserver.observe(child);
-              }
+              dialog.style.setProperty('translate', 'none', 'important');
+              const rect = dialog.getBoundingClientRect();
+              const viewport = window.visualViewport;
+              const top = viewport ? viewport.offsetTop : 0;
+              const height = viewport ? viewport.height : window.innerHeight;
+              const targetTop = top + Math.max(12, (height - rect.height) / 2);
+              const shift = Math.round(targetTop - rect.top);
+              dialog.style.setProperty('translate', '0px ' + shift + 'px', 'important');
             };
             const schedule = () => {
-              if (pending) return;
-              pending = true;
-              requestAnimationFrame(repair);
+              if (scheduled) return;
+              scheduled = true;
+              requestAnimationFrame(place);
             };
             const observer = new MutationObserver(schedule);
             observer.observe(document.body, {childList:true, subtree:true});
             window.addEventListener('resize', schedule);
-            window.__deeptutorResourceScrollRepair = {
-              observer, schedule, disconnect: () => {observer.disconnect(); resizeObserver?.disconnect();}
-            };
+            window.visualViewport?.addEventListener('resize', schedule);
+            window.__deeptutorResourcePositionFix = {observer, schedule};
             schedule();
           }
           // Temporary on-device diagnostics: only inspect; do not modify scrolling.
@@ -129,7 +109,7 @@ object MobilePageTweaks {
                 const info = [
                   'Viewport: ' + innerWidth + 'x' + innerHeight,
                   'Dialog: ' + Math.round(outer.width) + 'x' + Math.round(outer.height),
-                  'Dialog CSS: ' + dcss.display + ', overflow=' + dcss.overflowY,
+                  'Dialog CSS: ' + dcss.display + ', overflow=' + dcss.overflowY + ', top=' + Math.round(outer.top),
                   'Body: ' + (inner ? Math.round(inner.width) + 'x' + Math.round(inner.height) : 'missing'),
                   'Body client/scroll: ' + (body?.clientHeight ?? '-') + '/' + (body?.scrollHeight ?? '-'),
                   'Body CSS: overflow=' + css?.overflowY + ', flex=' + css?.flex + ', touch=' + css?.touchAction,
@@ -163,8 +143,8 @@ object MobilePageTweaks {
           document.getElementById('deeptutor-android-reading-fixes-v1')?.remove();
           window.__deeptutorAndroidResourceFix?.observer?.disconnect();
           delete window.__deeptutorAndroidResourceFix;
-          window.__deeptutorResourceScrollRepair?.disconnect();
-          delete window.__deeptutorResourceScrollRepair;
+          window.__deeptutorResourcePositionFix?.observer.disconnect();
+          delete window.__deeptutorResourcePositionFix;
           window.__deeptutorResourceDiagnostics?.disconnect();
           delete window.__deeptutorResourceDiagnostics;
           if (window.__deeptutorAndroidOriginalFocus) {
