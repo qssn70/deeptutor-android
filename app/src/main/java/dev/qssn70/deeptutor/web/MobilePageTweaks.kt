@@ -136,6 +136,10 @@ object MobilePageTweaks {
                   'ScrollTop test: ' + before + ' -> ' + after,
                   'Children: ' + (body?.children.length ?? 0),
                   'Inner height/scroll: ' + (body?.firstElementChild?.offsetHeight ?? '-') + '/' + (body?.firstElementChild?.scrollHeight ?? '-'),
+                  'Inner computed: ' + (() => { const e=body?.firstElementChild; if(!e)return '-'; const c=getComputedStyle(e); return c.display+'/'+c.position+'/'+c.transform+'/'+c.overflowY; })(),
+                  'Inner children: ' + (() => { const e=body?.firstElementChild; return e ? Array.from(e.children).map(n => n.tagName+':'+Math.round(n.getBoundingClientRect().height)+'/'+n.scrollHeight).join(',') : '-'; })(),
+                  'Sections: ' + (() => { const e=body?.firstElementChild; return e ? Array.from(e.querySelectorAll('section')).map(n => {const r=n.getBoundingClientRect();return Math.round(r.top)+':'+Math.round(r.bottom)+':'+n.scrollHeight;}).join(',') : '-'; })(),
+                  'Last item bottom: ' + (() => {const e=body?.firstElementChild; const nodes=e?.querySelectorAll('button');return nodes?.length ? Math.round(nodes[nodes.length-1].getBoundingClientRect().bottom) : '-';})(),
                   'CSS loaded: ' + !!document.getElementById(id)
                 ].join('\\n');
                 alert(info);
