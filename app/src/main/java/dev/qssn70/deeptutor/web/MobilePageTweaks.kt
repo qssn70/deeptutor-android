@@ -19,7 +19,7 @@ object MobilePageTweaks {
             ' [role="dialog"][aria-label="资源"],[role="dialog"][aria-label="Resources"] {',
             '   position:fixed !important; left:12px !important; right:12px !important;',
             '   top:12px !important; bottom:12px !important; width:auto !important;',
-            '   height:72dvh !important; max-height:72dvh !important;',
+            '   height:auto !important; max-height:72dvh !important;',
             '   transform:none !important; display:flex !important;',
             '   flex-direction:column !important; overflow:hidden !important;',
             '   touch-action:auto !important;',
@@ -28,10 +28,14 @@ object MobilePageTweaks {
             ' [role="dialog"][aria-label="Resources"] > :first-child { flex:0 0 auto !important; }',
             ' [role="dialog"][aria-label="资源"] > :last-child,',
             ' [role="dialog"][aria-label="Resources"] > :last-child {',
-            '   flex:1 1 0% !important; height:0 !important; min-height:0 !important;',
-            '   max-height:none !important; overflow-y:auto !important;',
+            '   flex:0 1 auto !important; height:auto !important; min-height:0 !important;',
+            '   max-height:calc(72dvh - 40px) !important; overflow-y:auto !important;',
             '   overscroll-behavior:contain; touch-action:pan-y !important;',
             '   -webkit-overflow-scrolling:touch;',
+            ' }',
+            ' [role="dialog"][aria-label="资源"] > :last-child > *,',
+            ' [role="dialog"][aria-label="Resources"] > :last-child > * {',
+            '   height:auto !important; min-height:max-content !important;',
             ' }'
           ].join(' ');
           document.head.appendChild(style);
