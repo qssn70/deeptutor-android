@@ -20,7 +20,7 @@ object MobilePageTweaks {
             ' [role="dialog"][aria-label="资源"],[role="dialog"][aria-label="Resources"] {',
             '   position:fixed !important; left:12px !important; right:12px !important;',
             '   top:12px !important; bottom:12px !important; width:auto !important;',
-            '   height:calc(100dvh - 24px) !important; max-height:calc(100dvh - 24px) !important;',
+            '   height:min(72dvh, 620px) !important; max-height:min(72dvh, 620px) !important;',
             '   transform:none !important; display:flex !important;',
             '   flex-direction:column !important; overflow:hidden !important;',
             '   touch-action:auto !important;',
