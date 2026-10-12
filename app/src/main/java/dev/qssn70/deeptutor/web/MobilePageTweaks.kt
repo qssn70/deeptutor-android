@@ -37,7 +37,19 @@ object MobilePageTweaks {
             '}'
           ].join(' ');
           document.head.appendChild(style);
-          // Upstream ComposerResources calls searchRef.focus() when the dialog opens.\n          // Suppress only that programmatic focus; a real tap still focuses the input.\n          if (!window.__deeptutorAndroidOriginalFocus) {\n            const originalFocus = HTMLElement.prototype.focus;\n            window.__deeptutorAndroidOriginalFocus = originalFocus;\n            HTMLElement.prototype.focus = function(...args) {\n              const dialog = this.closest?.('[role=\"dialog\"]');\n              const label = dialog?.getAttribute('aria-label');\n              if (this.matches?.('input') && (label === '资源' || label === 'Resources')) return;\n              return originalFocus.apply(this, args);\n            };\n          }\n          // SPA navigation does not reload WebView. CSS stays installed and
+          // Upstream ComposerResources calls searchRef.focus() when the dialog opens.
+          // Suppress only that programmatic focus; a real tap still focuses the input.
+          if (!window.__deeptutorAndroidOriginalFocus) {
+            const originalFocus = HTMLElement.prototype.focus;
+            window.__deeptutorAndroidOriginalFocus = originalFocus;
+            HTMLElement.prototype.focus = function(...args) {
+              const dialog = this.closest?.('[role=\"dialog\"]');
+              const label = dialog?.getAttribute('aria-label');
+              if (this.matches?.('input') && (label === '资源' || label === 'Resources')) return;
+              return originalFocus.apply(this, args);
+            };
+          }
+          // SPA navigation does not reload WebView. CSS stays installed and
           // automatically matches dialogs created later by React portals.
           return 'resource-sheet-v2-installed';
         })();
@@ -48,7 +60,11 @@ object MobilePageTweaks {
           document.getElementById('deeptutor-android-mobile-fixes-v2')?.remove();
           document.getElementById('deeptutor-android-reading-fixes-v1')?.remove();
           window.__deeptutorAndroidResourceFix?.observer?.disconnect();
-          delete window.__deeptutorAndroidResourceFix;\n          if (window.__deeptutorAndroidOriginalFocus) {\n            HTMLElement.prototype.focus = window.__deeptutorAndroidOriginalFocus;\n            delete window.__deeptutorAndroidOriginalFocus;\n          }
+          delete window.__deeptutorAndroidResourceFix;
+          if (window.__deeptutorAndroidOriginalFocus) {
+            HTMLElement.prototype.focus = window.__deeptutorAndroidOriginalFocus;
+            delete window.__deeptutorAndroidOriginalFocus;
+          }
         })();
     """.trimIndent()
 
