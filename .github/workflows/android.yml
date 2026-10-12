@@ -40,6 +40,13 @@ jobs:
         run: |
           printf '%s' "$SIGNING_KEY_BASE64" | base64 --decode > "$RUNNER_TEMP/deeptutor-signing.jks"
           test -s "$RUNNER_TEMP/deeptutor-signing.jks"
+      - name: Fetch official DeepTutor app icon
+        run: |
+          mkdir -p app/src/main/res/drawable-nodpi
+          curl --fail --location --retry 3 \
+            "https://raw.githubusercontent.com/HKUDS/DeepTutor/main/web/public/apple-touch-icon.png" \
+            --output app/src/main/res/drawable-nodpi/deeptutor_icon.png
+          file app/src/main/res/drawable-nodpi/deeptutor_icon.png
       - name: Build debug APK
         env:
           SIGNING_KEY_AVAILABLE: ${{ secrets.DEEPTUTOR_SIGNING_KEY_BASE64 != '' }}
