@@ -4,102 +4,50 @@ import android.net.Uri
 import android.webkit.WebView
 
 /**
- * Conservative, optional fixes for long formulas and code on narrow screens.
- *
- * This must NOT manipulate DeepTutor's React tree, authentication, sidebars,
- * chat input, WebSocket, or viewport meta. Upstream owns responsive layout.
- * A single identifiable <style> element makes these rules easy to remove.
+ * WebView-only compatibility adjustments for the official DeepTutor website.
+ * No JavaScript bridge and no changes to the user's server are required.
  */
 object MobilePageTweaks {
     private val installScript = """
-        (function () {
-          if (!document.head || !document.body) return;
-          const id = 'deeptutor-android-reading-fixes-v1';
+        (() => {
+          const id = 'deeptutor-android-mobile-fixes-v2';
           document.getElementById(id)?.remove();
           const style = document.createElement('style');
           style.id = id;
           style.textContent = [
             '@media (max-width: 767px) {',
-            '  main pre, main .katex-display {',
-            '    max-width: 100%;',
-            '    overflow-x: auto !important;',
-            '    -webkit-overflow-scrolling: touch;',
-            '  }',
-            '  main .katex-display { overflow-y: hidden; }',
-            '  /* DeepTutor ComposerResources: inline window.innerHeight positioning can place', 
-            '     the dialog partly below the visual viewport in Android WebView. */',
-            '  [role="dialog"][aria-label="资源"],',
-            '  [role="dialog"][aria-label="Resources"] {',
-            '    top: 12px !important;',
-            '    transform: none !important;',
-            '    bottom: auto !important;',
-            '    max-height: calc(100dvh - 24px) !important;',
-            '    height: calc(100dvh - 24px) !important;',
-            '    display: flex !important;',
-            '    flex-direction: column !important;',
-            '  }',
-            '  [role="dialog"][aria-label="资源"] > div:last-child,',
-            '  [role="dialog"][aria-label="Resources"] > div:last-child {',
-            '    min-height: 0 !important;',
-            '    overflow-y: auto !important;',
-            '    overscroll-behavior: contain;',
-            '    -webkit-overflow-scrolling: touch;',
-            '  }',
+            ' main pre, main .katex-display { max-width:100%; overflow-x:auto !important; }',
+            ' [role="dialog"][aria-label="资源"],[role="dialog"][aria-label="Resources"] {',
+            '   position:fixed !important; left:12px !important; right:12px !important;',
+            '   top:12px !important; bottom:12px !important; width:auto !important;',
+            '   height:auto !important; max-height:none !important;',
+            '   transform:none !important; display:flex !important;',
+            '   flex-direction:column !important; overflow:hidden !important;',
+            '   touch-action:auto !important;',
+            ' }',
+            ' [role="dialog"][aria-label="资源"] > :first-child,',
+            ' [role="dialog"][aria-label="Resources"] > :first-child { flex:0 0 auto !important; }',
+            ' [role="dialog"][aria-label="资源"] > :last-child,',
+            ' [role="dialog"][aria-label="Resources"] > :last-child {',
+            '   flex:1 1 0% !important; height:0 !important; min-height:0 !important;',
+            '   max-height:none !important; overflow-y:auto !important;',
+            '   overscroll-behavior:contain; touch-action:pan-y !important;',
+            '   -webkit-overflow-scrolling:touch;',
+            ' }',
             '}'
           ].join(' ');
           document.head.appendChild(style);
-          // DeepTutor renders the resource dialog via a portal and computes
-          // its top/height inline. CSS alone can be overridden by subsequent
-          // React renders; watch for the dialog and re-clamp it.
-          if (!window.__deeptutorAndroidResourceFix) {
-            let scheduled = false;
-            const fix = () => {
-              scheduled = false;
-              const dialog = document.querySelector('[role="dialog"][aria-label="资源"],[role="dialog"][aria-label="Resources"]');
-              if (!dialog || window.innerWidth >= 768) return;
-              const viewport = window.visualViewport;
-              const height = viewport?.height || window.innerHeight;
-              const top = (viewport?.offsetTop || 0) + 12;
-              const maxHeight = Math.max(180, height - 24);
-              if (dialog.style.getPropertyValue('height') !== maxHeight + 'px')
-                dialog.style.setProperty('height', maxHeight + 'px', 'important');
-              if (dialog.style.getPropertyValue('transform') !== 'none')
-                dialog.style.setProperty('transform', 'none', 'important');
-              if (dialog.style.getPropertyValue('top') !== top + 'px')
-                dialog.style.setProperty('top', top + 'px', 'important');
-              if (dialog.style.getPropertyValue('max-height') !== maxHeight + 'px')
-                dialog.style.setProperty('max-height', maxHeight + 'px', 'important');
-              if (dialog.style.getPropertyValue('bottom') !== 'auto')
-                dialog.style.setProperty('bottom', 'auto', 'important');
-              const body = dialog.lastElementChild;
-              if (body) {
-                body.style.setProperty('min-height', '0', 'important');
-                body.style.setProperty('flex', '1 1 auto', 'important');
-                body.style.setProperty('overflow-y', 'auto', 'important');
-                body.style.setProperty('touch-action', 'pan-y', 'important');
-                body.style.setProperty('-webkit-overflow-scrolling', 'touch');
-              }
-            };
-            const schedule = () => {
-              if (scheduled) return;
-              scheduled = true;
-              requestAnimationFrame(fix);
-            };
-            const observer = new MutationObserver(schedule);
-            observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['style'] });
-            window.visualViewport?.addEventListener('resize', schedule);
-            window.addEventListener('resize', schedule);
-            window.__deeptutorAndroidResourceFix = { observer, schedule };
-          }
-          window.__deeptutorAndroidResourceFix.schedule();
-          return 'mobile-resource-fix-installed';
+          // SPA navigation does not reload WebView. CSS stays installed and
+          // automatically matches dialogs created later by React portals.
+          return 'resource-sheet-v2-installed';
         })();
     """.trimIndent()
 
     private val removeScript = """
-        (function () {
+        (() => {
+          document.getElementById('deeptutor-android-mobile-fixes-v2')?.remove();
           document.getElementById('deeptutor-android-reading-fixes-v1')?.remove();
-          window.__deeptutorAndroidResourceFix?.observer.disconnect();
+          window.__deeptutorAndroidResourceFix?.observer?.disconnect();
           delete window.__deeptutorAndroidResourceFix;
         })();
     """.trimIndent()
