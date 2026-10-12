@@ -32,8 +32,7 @@ object MobilePageTweaks {
             '   max-height:none !important; overflow-y:auto !important;',
             '   overscroll-behavior:contain; touch-action:pan-y !important;',
             '   -webkit-overflow-scrolling:touch;',
-            ' }',
-            '}'
+            ' }'
           ].join(' ');
           document.head.appendChild(style);
           // Upstream ComposerResources calls searchRef.focus() when the dialog opens.
