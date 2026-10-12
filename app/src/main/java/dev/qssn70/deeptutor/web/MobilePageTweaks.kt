@@ -35,7 +35,7 @@ object MobilePageTweaks {
             ' }',
             ' [role="dialog"][aria-label="资源"] > :last-child > *,',
             ' [role="dialog"][aria-label="Resources"] > :last-child > * {',
-            '   height:max-content !important; min-height:max-content !important; flex:none !important;',
+            '   height:auto !important; min-height:0 !important; flex:none !important;',
             ' }'
           ].join(' ');
           document.head.appendChild(style);
@@ -52,6 +52,59 @@ object MobilePageTweaks {
               if (this.matches?.('input') && (label === '资源' || label === 'Resources')) return;
               return originalFocus.apply(this, args);
             };
+          }
+          // Some Framer Motion descendants visually extend past the scroll box
+          // without contributing to scrollHeight. Measure their real bounds and
+          // add an invisible flow spacer only when required.
+          if (!window.__deeptutorResourceScrollRepair) {
+            let pending = false;
+            const repair = () => {
+              pending = false;
+              const dialog = document.querySelector('[role="dialog"][aria-label="资源"],[role="dialog"][aria-label="Resources"]');
+              if (!dialog) return;
+              const body = dialog.lastElementChild;
+              if (!body) return;
+              const header = dialog.firstElementChild;
+              const available = Math.max(100, dialog.clientHeight - (header?.offsetHeight || 40));
+              body.style.setProperty('height', available + 'px', 'important');
+              body.style.setProperty('max-height', available + 'px', 'important');
+              body.style.setProperty('flex', '0 0 auto', 'important');
+              body.style.setProperty('overflow-y', 'auto', 'important');
+              const inner = body.firstElementChild;
+              if (!inner) return;
+              inner.style.setProperty('height', 'auto', 'important');
+              inner.style.setProperty('min-height', '0', 'important');
+              const spacerId = 'deeptutor-resource-scroll-spacer';
+              let spacer = body.querySelector('#' + spacerId);
+              if (!spacer) {
+                spacer = document.createElement('div');
+                spacer.id = spacerId;
+                spacer.setAttribute('aria-hidden', 'true');
+                spacer.style.cssText = 'height:0px;min-height:0;pointer-events:none;flex:none;';
+                body.appendChild(spacer);
+              }
+              // Temporarily exclude the spacer itself from the measurement.
+              spacer.style.height = '0px';
+              const origin = body.getBoundingClientRect().top + body.scrollTop;
+              let bottom = origin;
+              for (const el of inner.querySelectorAll('*')) {
+                const rect = el.getBoundingClientRect();
+                if (rect.height > 0) bottom = Math.max(bottom, rect.bottom + body.scrollTop);
+              }
+              const extent = Math.ceil(bottom - origin);
+              const deficit = Math.max(0, extent - body.scrollHeight);
+              spacer.style.height = deficit + 'px';
+            };
+            const schedule = () => {
+              if (pending) return;
+              pending = true;
+              requestAnimationFrame(repair);
+            };
+            const observer = new MutationObserver(schedule);
+            observer.observe(document.body, {childList:true, subtree:true});
+            window.addEventListener('resize', schedule);
+            window.__deeptutorResourceScrollRepair = {observer, schedule};
+            schedule();
           }
           // Temporary on-device diagnostics: only inspect; do not modify scrolling.
           if (!window.__deeptutorResourceDiagnostics) {
@@ -107,6 +160,8 @@ object MobilePageTweaks {
           document.getElementById('deeptutor-android-reading-fixes-v1')?.remove();
           window.__deeptutorAndroidResourceFix?.observer?.disconnect();
           delete window.__deeptutorAndroidResourceFix;
+          window.__deeptutorResourceScrollRepair?.observer.disconnect();
+          delete window.__deeptutorResourceScrollRepair;
           window.__deeptutorResourceDiagnostics?.disconnect();
           delete window.__deeptutorResourceDiagnostics;
           if (window.__deeptutorAndroidOriginalFocus) {
